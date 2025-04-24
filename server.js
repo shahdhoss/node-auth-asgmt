@@ -1,6 +1,6 @@
 const express = require('express');
 const { hashPassword, verifyPassword } = require('./password-utils');
-const { signJWT, verifyJWT } = require('./jwt-utils');
+const { signJWT , verifyJWT} = require('./jwt-utils');
 
 const app = express();
 app.use(express.json());
@@ -23,7 +23,9 @@ function authenticate(req, res, next) {
 
   try {
     // TODO: Verify JWT
-
+    const decoded = verifyJWT(token, JWT_SECRET);
+    if (!decoded) return res.status(403).json({ message: 'Invalid token' });
+    req.user = decoded;
     next();
   } catch {
     res.status(403).json({ message: 'Invalid token' });
@@ -32,7 +34,7 @@ function authenticate(req, res, next) {
 
 function authorizeAdmin(req, res, next) {
   if (req.user?.role !== 'admin')
-    return res.status(403).json({ message: 'Admin role required' });
+    return res.status(403).json({ message: 'Admin role required' , role: req.user.role});
 
   next();
 }
@@ -49,10 +51,10 @@ app.post('/register', async (req, res) => {
     return res.status(409).json({ message: 'User already exists' });
 
   // TODO: Hash password
-
+  const hashedPassword = hashPassword(password);
   users.push({ username, password: hashedPassword, role });
 
-  res.status(201).json({ message: 'User registered' });
+  res.status(201).json({ message: 'User registered' , user:{username, role} });
 });
 
 app.post('/login', async (req, res) => {
@@ -60,10 +62,12 @@ app.post('/login', async (req, res) => {
   const user = users.find((u) => u.username === username);
 
   // TODO: Verify password
-
+  if (!user || !verifyPassword(password, user.password)) {
+    return res.status(401).json({ message: 'Invalid credentials' });
+  }
   // TODO: Sign JWT
-
-  res.json({ token });
+  const token = signJWT({ username , role: user.role}, JWT_SECRET, 3600)
+  res.json({ token , role: user.role });
 });
 
 app.get('/books', (req, res) => {
