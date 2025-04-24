@@ -1,8 +1,8 @@
 const crypto = require('crypto');
 
 exports.signJWT = (payload, secret, expiresInSeconds) => {
-    jwt_header= {"alg":"HS256","typ":"JWT"}
-    const base64Header = toBase64url(jwt_header)
+    jwtHeader= {"alg":"HS256","typ":"JWT"}
+    const base64Header = toBase64url(jwtHeader)
     const newPayload= payloadWExp(payload, expiresInSeconds)
     const base64Payload = toBase64url(newPayload)
     const signature = crypto.createHmac('sha256', secret).update(`${base64Header}.${base64Payload}`).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
